@@ -1,0 +1,78 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>rtc test</title></head>
+<body style="background:#111;color:#0f0;font:13px monospace;padding:10px">
+<pre id="out">starting…</pre>
+<script src="../assets/peerjs.min.js"></script>
+<script type="module">
+import { createHost, joinHost } from "../assets/rtc.js";
+
+const out = document.getElementById("out");
+const log = [];
+const seen = new Set();
+let done = false;
+function note(t) { if (!seen.has(t)) { seen.add(t); log.push(t); out.textContent = log.join("\n"); } }
+function finish(ok, why) {
+  if (done) return; done = true;
+  out.textContent = (ok ? "PASS\n" : "FAIL: " + why + "\n") + log.join("\n");
+  document.title = ok ? "PASS" : "FAIL";
+}
+setTimeout(() => finish(false, "timeout"), 40000);
+
+const CODE = "T" + Math.random().toString(36).slice(2, 6).toUpperCase();
+const HOST_ID = "host_" + Math.random().toString(36).slice(2, 7);
+const PEER_ID = "peer_" + Math.random().toString(36).slice(2, 7);
+
+(async () => {
+  const host = await createHost(CODE, HOST_ID);
+  const peer = await joinHost(CODE, PEER_ID);
+
+  host.onMessage = m => {
+    if (m.t === "room") {
+      const seated = m.players.filter(p => p.seat >= 0);
+      if (seated.length === 2 && m.phase === "lobby") {
+        note("both seated (host sees 2), host=" + (m.host === HOST_ID ? "HOST" : "?"));
+        const pj = m.players.find(p => p.id === PEER_ID);
+        if (pj && pj.ready && !seen.has("started")) {
+          seen.add("started");
+          host.send({ t: "track", v: 4 });
+          host.send({ t: "start" });
+        }
+      }
+    }
+    if (m.t === "count") note("host count " + m.n);
+    if (m.t === "go") {
+      note("host GO");
+      host.send({ t: "s", x: 1, y: 0, z: 2, h: 0.4, sp: 30, d: 1, n: 0 });
+      // authority is timing-agnostic: blast all 3 laps of checkpoints in order
+      for (let l = 0; l < 3 && !done; l++) {
+        for (let i = 1; i < 16; i++) host.send({ t: "cp", i });
+        host.send({ t: "cp", i: 0 });
+      }
+    }
+    if (m.t === "prog") {
+      const me = m.p.find(p => p.id === HOST_ID);
+      if (me) { window._lastProg = "lap=" + me.lap + " cp=" + me.cp + " fin=" + me.fin; window._progCount = (window._progCount || 0) + 1; }
+      if (me && me.lap === 3) note("host reached lap 3");
+      if (me && me.fin) { note("host finished place=" + me.place); if (!seen.has("dropped")) { seen.add("dropped"); peer.close(); } }
+    }
+    if (m.t === "end") {
+      note("END " + m.results.map(r => r.name + "#" + r.place + (r.fin ? "F" : "D")).join(" "));
+      const w = m.results[0];
+      finish(w.id === HOST_ID && w.place === 1, "winner wrong: " + JSON.stringify(m.results));
+    }
+  };
+  host.onStatus = st => { if (st === "open") { note("host peer open"); host.send({ t: "join", id: HOST_ID, name: "HOSTBOT", car: { body: 1 } }); } else note("host status " + st); };
+
+  peer.onMessage = m => {
+    if (m.t === "joined") note("peer joined seat=" + m.seat);
+    if (m.t === "room" && !seen.has("peerready")) {
+      const me = m.players.find(p => p.id === PEER_ID);
+      if (me && me.seat >= 0) { seen.add("peerready"); peer.send({ t: "ready", v: true }); note("peer readied"); }
+    }
+    if (m.t === "snap" && m.c.length >= 2) note("peer sees snap w/ " + m.c.length + " cars");
+    if (m.t === "go") { note("peer GO"); let n = 0; const iv = setInterval(() => { if (n++ > 30 || done) return clearInterval(iv); peer.send({ t: "s", x: 5 + n, y: 0, z: 3, h: 1, sp: 20, d: 0, n: 1 }); }, 60); }
+  };
+  peer.onStatus = st => { if (st === "open") { note("peer conn open"); peer.send({ t: "join", id: PEER_ID, name: "RIVALBOT", car: { body: 0 } }); } else note("peer status " + st); };
+})();
+</script>
+</body></html>

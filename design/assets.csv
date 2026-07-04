@@ -1,0 +1,20 @@
+id,role,type,description,size_ratio,style_line_ref,source
+music_race,looping background music during menu and races,audio_music,energetic 118bpm synthwave outrun instrumental with driving bass arpeggios and retro drums,30s loop,blocks 3-4 mood,generate
+sfx_engine,continuous engine tone pitch-tracked to car speed,audio_sfx_procedural,WebAudio sawtooth+sub oscillators through lowpass,continuous,block 4 mood,code
+sfx_drift,tire screech while drift is held,audio_sfx_procedural,WebAudio filtered noise with resonant bandpass,continuous,block 4 mood,code
+sfx_nitro,boost ignition whoosh and sustained roar,audio_sfx_procedural,WebAudio noise sweep plus detuned saws,~2s + sustain,block 3 signal hue,code
+sfx_ui,countdown beeps lap chime finish fanfare click,audio_sfx_procedural,WebAudio sine/square blips,short one-shots,block 4 mood,code
+car_body,player and remote car 3D model with customization slots,3d_procedural,low-poly angular racer body cabin wheels spoiler variants neon edge strips underglow,2.2 hero-units long,blocks 1-3,code
+tex_road,tiling road surface for all tracks,texture_procedural,dark asphalt with subtle noise and neon lane edge strips seamless by construction,512x512 wrap,blocks 1-3,code
+tex_ground,tiling terrain grid outside the road,texture_procedural,black ground with glowing perspective grid lines seamless by construction,512x512 wrap,blocks 1-3,code
+sky_gradient,per-track skydome gradient with retro sun or stars,3d_procedural,vertex-gradient dome deep indigo to horizon glow with striped retro sun and star field,dome radius 900,blocks 3-4,code
+track_neon_bay,track 1 environment geometry set,3d_procedural,coastal circuit cyan signal hue neon palm silhouettes ocean grid plane,spline ~1100u,blocks 2-3,code
+track_grid_city,track 2 environment geometry set,3d_procedural,downtown circuit magenta signal hue glowing skyscraper blocks billboards,spline ~1200u,blocks 2-3,code
+track_sunset_mesa,track 3 environment geometry set,3d_procedural,canyon circuit orange signal hue striped retro sun rock mesas,spline ~1150u,blocks 2-3,code
+track_ice_circuit,track 4 environment geometry set,3d_procedural,frozen circuit ice-blue signal hue crystal shards aurora band,spline ~1050u,blocks 2-3,code
+track_laser_jungle,track 5 environment geometry set,3d_procedural,overgrown circuit emerald signal hue neon foliage cones ruin arches,spline ~1250u,blocks 2-3,code
+track_volcanic_core,track 6 environment geometry set,3d_procedural,volcano rim circuit molten red-orange signal hue lava veins ember particles,spline ~1100u,blocks 2-3,code
+particle_sprites,drift smoke nitro flame speed streak sprites,texture_procedural,canvas radial-gradient soft glow sprites in signal hues,64x64,block 3 signal hues,code
+ui_theme,lobby garage HUD results styling,ui_css,dark glassmorphic panels neon cyan-magenta borders glow text,responsive,blocks 3-5,code
+thumbnail,marketplace and OG cover image,image,neon synthwave racing scene with glowing cars on a grid highway,16:9,full formula,generate
+favicon,site and catalog icon,image,single glowing neon racer car icon on dark background,1:1,full formula,generate

@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Velocity Rush — Neon Grand Prix</title>
+<style>
+:root{
+  --cyan:#00e5ff; --pink:#ff2d78; --violet:#b44bff; --gold:#ffd23c;
+  --bg:#05060d; --panel:rgba(10,12,24,.82); --line:rgba(0,229,255,.35);
+  --txt:#e8eaff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font-family:"Segoe UI",system-ui,-apple-system,sans-serif;touch-action:none}
+canvas#gl{position:fixed;inset:0;display:block}
+#ui{position:fixed;inset:0;pointer-events:none}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;
+  justify-content:center;pointer-events:auto;padding:16px}
+.screen.on{display:flex}
+h1.logo{font-size:clamp(34px,8vw,74px);margin:0;font-weight:900;letter-spacing:.08em;font-style:italic;
+  background:linear-gradient(180deg,#fff 10%,var(--cyan) 45%,var(--pink) 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(0,229,255,.55)) drop-shadow(0 4px 24px rgba(255,45,120,.4));text-align:center}
+.sub{letter-spacing:.55em;color:var(--pink);font-weight:700;font-size:clamp(10px,2vw,15px);
+  text-shadow:0 0 12px var(--pink);margin:4px 0 26px;text-align:center}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;
+  box-shadow:0 0 32px rgba(0,229,255,.12), inset 0 0 40px rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  max-width:min(560px,94vw);width:100%;max-height:92vh;overflow-y:auto}
+.btn{display:inline-block;font:inherit;font-weight:800;letter-spacing:.14em;color:var(--txt);
+  background:linear-gradient(180deg,rgba(0,229,255,.16),rgba(0,229,255,.04));
+  border:1px solid var(--cyan);border-radius:9px;padding:13px 20px;cursor:pointer;text-align:center;
+  text-shadow:0 0 8px rgba(0,229,255,.8);box-shadow:0 0 14px rgba(0,229,255,.25);transition:filter .12s, transform .06s}
+.btn:hover{filter:brightness(1.35)} .btn:active{transform:scale(.97)}
+.btn.pink{border-color:var(--pink);text-shadow:0 0 8px rgba(255,45,120,.8);
+  background:linear-gradient(180deg,rgba(255,45,120,.18),rgba(255,45,120,.04));box-shadow:0 0 14px rgba(255,45,120,.3)}
+.btn.big{font-size:18px;padding:16px 26px;width:100%}
+.btn.dim{opacity:.42;pointer-events:none}
+.btn.ghost{border-color:rgba(232,234,255,.3);box-shadow:none;text-shadow:none;background:rgba(255,255,255,.04)}
+.row{display:flex;gap:10px;width:100%;margin-top:10px}
+.row>.btn{flex:1}
+input.txt{font:inherit;font-weight:700;letter-spacing:.2em;color:var(--txt);background:rgba(0,0,0,.45);
+  border:1px solid var(--line);border-radius:9px;padding:13px 14px;width:100%;outline:none;text-transform:uppercase;text-align:center}
+label.lb{display:block;font-size:11px;letter-spacing:.3em;color:var(--cyan);margin:14px 0 6px;opacity:.9}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{width:34px;height:34px;border-radius:8px;border:2px solid rgba(255,255,255,.15);cursor:pointer;
+  box-shadow:inset 0 0 8px rgba(0,0,0,.5)}
+.chip.sel{border-color:#fff;box-shadow:0 0 12px currentColor}
+.seg{display:flex;gap:8px}
+.seg .btn{flex:1;padding:10px 6px;font-size:12px}
+.seg .btn.sel{background:linear-gradient(180deg,rgba(0,229,255,.4),rgba(0,229,255,.1))}
+.hint{font-size:11px;opacity:.55;letter-spacing:.12em;text-align:center;margin-top:14px;line-height:1.7}
+/* lobby */
+.codebar{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+.codebar .code{flex:1;font-size:20px;font-weight:900;letter-spacing:.4em;text-align:center;color:var(--gold);
+  text-shadow:0 0 12px rgba(255,210,60,.7);background:rgba(0,0,0,.4);border:1px dashed rgba(255,210,60,.4);
+  border-radius:9px;padding:10px}
+.plist{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}
+.pcard{display:flex;align-items:center;gap:9px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.09);
+  border-radius:9px;padding:9px 10px;min-height:46px}
+.pcard.empty{opacity:.28;justify-content:center;letter-spacing:.2em;font-size:11px}
+.pcard .dot{width:15px;height:15px;border-radius:4px;flex:none;box-shadow:0 0 10px currentColor}
+.pcard .nm{font-weight:700;letter-spacing:.06em;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .rdy{font-size:9px;letter-spacing:.2em;color:#3cff8f;text-shadow:0 0 8px #3cff8f}
+.pcard .hostTag{font-size:9px;letter-spacing:.2em;color:var(--gold)}
+.trackpick{display:flex;align-items:center;gap:10px;margin:6px 0 4px}
+.trackpick .tname{flex:1;text-align:center;font-weight:900;letter-spacing:.18em;font-size:17px;color:var(--cyan);
+  text-shadow:0 0 12px rgba(0,229,255,.8)}
+.tblurb{text-align:center;font-size:11px;opacity:.6;letter-spacing:.1em;margin-bottom:12px;min-height:15px}
+.arrow{width:44px;height:44px;font-size:20px;line-height:1;padding:0}
+/* HUD */
+#hud{pointer-events:none}
+#hud .top{position:absolute;top:max(10px,env(safe-area-inset-top));left:0;right:0;display:flex;
+  justify-content:center;gap:18px;font-weight:900;letter-spacing:.1em}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 16px;font-size:15px}
+.pill b{color:var(--cyan)}
+#timer{color:var(--gold)}
+#speedbox{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:110px;text-align:right}
+#speed{font-size:54px;font-weight:900;font-style:italic;line-height:.9;
+  text-shadow:0 0 18px rgba(0,229,255,.8)}
+#speedu{font-size:11px;letter-spacing:.3em;opacity:.6}
+#nitrobox{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:110px;width:min(200px,34vw)}
+#nitrolabel{font-size:10px;letter-spacing:.3em;color:var(--violet);margin-bottom:4px;text-shadow:0 0 8px var(--violet)}
+#nitrobar{height:12px;border:1px solid var(--violet);border-radius:6px;overflow:hidden;background:rgba(0,0,0,.5)}
+#nitrofill{height:100%;width:0%;background:linear-gradient(90deg,var(--violet),var(--cyan));
+  box-shadow:0 0 12px var(--violet);transition:width .08s linear}
+#minimap{position:absolute;top:max(58px,calc(env(safe-area-inset-top) + 48px));right:max(12px,env(safe-area-inset-right));
+  width:132px;height:132px;opacity:.92}
+#center{position:absolute;top:32%;left:0;right:0;text-align:center;font-size:clamp(40px,10vw,90px);
+  font-weight:900;font-style:italic;letter-spacing:.1em;color:var(--gold);
+  text-shadow:0 0 30px rgba(255,210,60,.9);pointer-events:none}
+#notice{position:absolute;top:22%;left:0;right:0;text-align:center;font-size:clamp(16px,3.4vw,26px);font-weight:900;
+  letter-spacing:.25em;color:var(--pink);text-shadow:0 0 16px var(--pink)}
+#vignette{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(120,40,255,.28) 100%)}
+/* touch controls */
+#touch{position:absolute;inset:0;display:none}
+.tbtn{position:absolute;pointer-events:auto;width:74px;height:74px;border-radius:50%;
+  border:2px solid var(--line);background:rgba(10,12,24,.55);color:var(--txt);font-weight:900;
+  font-size:12px;letter-spacing:.06em;display:flex;align-items:center;justify-content:center;
+  text-shadow:0 0 8px rgba(0,229,255,.7)}
+.tbtn:active,.tbtn.on{background:rgba(0,229,255,.3)}
+#tL{left:14px;bottom:20px}#tR{left:104px;bottom:20px}
+#tGas{right:14px;bottom:96px;border-color:#3cff8f}
+#tBrake{right:104px;bottom:20px;width:60px;height:60px}
+#tDrift{right:14px;bottom:20px;border-color:var(--pink)}
+#tNitro{right:104px;bottom:96px;border-color:var(--violet);width:60px;height:60px}
+/* results */
+.standings{width:100%;margin:6px 0 16px}
+.srow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;margin-bottom:6px;
+  background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08)}
+.srow.first{border-color:var(--gold);box-shadow:0 0 18px rgba(255,210,60,.25)}
+.srow .pl{font-weight:900;font-style:italic;width:44px;font-size:19px;color:var(--cyan)}
+.srow.first .pl{color:var(--gold)}
+.srow .dot{width:14px;height:14px;border-radius:4px;box-shadow:0 0 10px currentColor}
+.srow .nm{flex:1;font-weight:700;letter-spacing:.08em}
+.srow .tm{font-size:13px;opacity:.8;font-variant-numeric:tabular-nums}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--panel);
+  border:1px solid var(--pink);color:var(--txt);border-radius:9px;padding:10px 18px;font-weight:700;
+  letter-spacing:.1em;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50}
+#dev{position:fixed;top:4px;left:4px;color:#0f0;font:11px monospace;display:none;z-index:60;pointer-events:none;white-space:pre}
+.iconbtn{position:fixed;top:max(10px,env(safe-area-inset-top));font-size:11px;letter-spacing:.15em;z-index:40;
+  padding:8px 12px;pointer-events:auto}
+#muteBtn{right:12px}
+#gear{display:flex;flex-direction:column;gap:0}
+@media (max-height:520px){
+  #speedbox{bottom:14px}#nitrobox{bottom:14px}
+  .plist{grid-template-columns:1fr 1fr 1fr}
+}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="vignette"></div>
+<div id="ui">
+  <!-- MENU -->
+  <div class="screen on" id="screen-menu">
+    <h1 class="logo" id="logoTitle"></h1>
+    <div class="sub" id="logoSub"></div>
+    <div class="panel" style="max-width:400px">
+      <label class="lb" id="lbName"></label>
+      <input class="txt" id="nameInput" maxlength="12" autocomplete="off">
+      <div class="row"><button class="btn big" id="btnGarage"></button></div>
+      <div class="row"><button class="btn big pink" id="btnCreate"></button></div>
+      <div class="row">
+        <input class="txt" id="joinCode" maxlength="10" style="flex:1" autocomplete="off">
+        <button class="btn" id="btnJoin" style="min-width:96px"></button>
+      </div>
+      <div class="row"><button class="btn big ghost" id="btnPractice"></button></div>
+      <div class="hint" id="hintControls"></div>
+    </div>
+  </div>
+
+  <!-- GARAGE -->
+  <div class="screen" id="screen-garage" style="justify-content:flex-end">
+    <div class="panel" style="max-width:520px;margin-bottom:max(10px,env(safe-area-inset-bottom))">
+      <div id="gear">
+        <label class="lb" id="lbBody"></label><div class="chips" id="chipsBody"></div>
+        <label class="lb" id="lbAccent"></label><div class="chips" id="chipsAccent"></div>
+        <label class="lb" id="lbRim"></label><div class="chips" id="chipsRim"></div>
+        <label class="lb" id="lbGlow"></label><div class="chips" id="chipsGlow"></div>
+        <label class="lb" id="lbSpoiler"></label><div class="seg" id="segSpoiler"></div>
+      </div>
+      <div class="row"><button class="btn big" id="btnGarageSave"></button></div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="screen-lobby">
+    <div class="panel">
+      <div class="codebar">
+        <div class="code" id="roomCode"></div>
+        <button class="btn" id="btnCopy" style="min-width:86px"></button>
+      </div>
+      <div class="trackpick">
+        <button class="btn arrow" id="trkPrev">◀</button>
+        <div class="tname" id="trkName"></div>
+        <button class="btn arrow" id="trkNext">▶</button>
+      </div>
+      <div class="tblurb" id="trkBlurb"></div>
+      <label class="lb" id="lbPlayers"></label>
+      <div class="plist" id="plist"></div>
+      <div class="row">
+        <button class="btn big pink" id="btnReady"></button>
+        <button class="btn big" id="btnStart"></button>
+      </div>
+      <div class="hint" id="lobbyStatus"></div>
+      <div class="row"><button class="btn ghost" id="btnLeave" style="flex:none;padding:9px 18px;font-size:11px"></button></div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div class="screen" id="screen-hud">
+    <div id="hud">
+      <div class="top">
+        <div class="pill" id="lapPill"></div>
+        <div class="pill" id="timer">0:00.0</div>
+        <div class="pill" id="posPill"></div>
+      </div>
+      <div id="speedbox"><div id="speed">0</div><div id="speedu"></div></div>
+      <div id="nitrobox"><div id="nitrolabel"></div><div id="nitrobar"><div id="nitrofill"></div></div></div>
+      <canvas id="minimap" width="264" height="264"></canvas>
+      <div id="center"></div>
+      <div id="notice"></div>
+      <div id="touch">
+        <div class="tbtn" id="tL">◀</div><div class="tbtn" id="tR">▶</div>
+        <div class="tbtn" id="tGas">GAS</div><div class="tbtn" id="tNitro">N₂O</div>
+        <div class="tbtn" id="tDrift">DRIFT</div><div class="tbtn" id="tBrake">BRK</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" id="screen-results">
+    <div class="panel" style="max-width:460px">
+      <h1 class="logo" style="font-size:30px" id="resTitle"></h1>
+      <div class="standings" id="standings"></div>
+      <div class="row"><button class="btn big pink" id="btnLobbyBack"></button></div>
+      <div class="hint" id="resHint"></div>
+    </div>
+  </div>
+</div>
+<button class="btn iconbtn" id="muteBtn">♪</button>
+<div id="toast"></div>
+<div id="dev"></div>
+<script src="./assets/three.min.js"></script>
+<script src="./assets/peerjs.min.js"></script>
+<script type="module" src="./assets/game.js"></script>
+</body>
+</html>

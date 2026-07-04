@@ -1,0 +1,166 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>cover gen</title></head>
+<body style="background:#111">
+<canvas id="thumb" width="1280" height="720"></canvas>
+<canvas id="icon" width="512" height="512"></canvas>
+<script>
+function stars(x, w, h, n) {
+  x.fillStyle = "#cfe8ff";
+  for (let i = 0; i < n; i++) {
+    const sx = Math.random() * w, sy = Math.random() * h * 0.5;
+    x.globalAlpha = 0.3 + Math.random() * 0.7;
+    x.fillRect(sx, sy, Math.random() < 0.2 ? 3 : 2, Math.random() < 0.2 ? 3 : 2);
+  }
+  x.globalAlpha = 1;
+}
+function sun(x, cx, cy, r) {
+  const g = x.createLinearGradient(0, cy - r, 0, cy + r);
+  g.addColorStop(0, "#ffd23c"); g.addColorStop(1, "#ff2d78");
+  x.save();
+  x.shadowColor = "#ff6a2d"; x.shadowBlur = 80;
+  x.fillStyle = g;
+  x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  x.restore();
+  x.save();
+  x.globalCompositeOperation = "destination-out";
+  for (let i = 0; i < 6; i++) {
+    const y = cy + r * 0.12 + i * (r * 0.14);
+    x.fillRect(cx - r - 5, y, r * 2 + 10, 4 + i * 3.4);
+  }
+  x.restore();
+}
+function grid(x, w, h, horizon) {
+  x.strokeStyle = "rgba(180,75,255,0.55)";
+  x.lineWidth = 2;
+  const cx = w / 2;
+  for (let i = -14; i <= 14; i++) {
+    x.beginPath();
+    x.moveTo(cx + i * 26, horizon);
+    x.lineTo(cx + i * w * 0.16, h + 40);
+    x.stroke();
+  }
+  for (let i = 0; i < 12; i++) {
+    const t = i / 12;
+    const y = horizon + Math.pow(t, 2.1) * (h - horizon);
+    x.globalAlpha = 0.25 + t * 0.6;
+    x.beginPath(); x.moveTo(0, y); x.lineTo(w, y); x.stroke();
+  }
+  x.globalAlpha = 1;
+}
+function road(x, w, h, horizon) {
+  const cx = w / 2;
+  x.fillStyle = "#0b0d16";
+  x.beginPath();
+  x.moveTo(cx - 26, horizon);
+  x.lineTo(cx + 26, horizon);
+  x.lineTo(cx + w * 0.34, h);
+  x.lineTo(cx - w * 0.34, h);
+  x.closePath(); x.fill();
+  for (const s of [-1, 1]) {
+    x.strokeStyle = "#00e5ff";
+    x.lineWidth = 7;
+    x.shadowColor = "#00e5ff"; x.shadowBlur = 26;
+    x.beginPath();
+    x.moveTo(cx + s * 26, horizon);
+    x.lineTo(cx + s * w * 0.34, h);
+    x.stroke();
+    x.shadowBlur = 0;
+  }
+}
+function car(x, cx, cy, s, body, glow) {
+  x.save();
+  x.translate(cx, cy); x.scale(s, s);
+  // light trail
+  const tg = x.createLinearGradient(0, -150, 0, 30);
+  tg.addColorStop(0, glow + "00"); tg.addColorStop(1, glow + "66");
+  x.fillStyle = tg;
+  x.fillRect(-38, -150, 76, 160);
+  // underglow
+  x.shadowColor = glow; x.shadowBlur = 40;
+  x.fillStyle = glow;
+  x.fillRect(-52, 26, 104, 8);
+  x.shadowBlur = 0;
+  // body
+  x.shadowColor = body; x.shadowBlur = 30;
+  x.fillStyle = body;
+  x.beginPath();
+  x.moveTo(-50, 26); x.lineTo(-42, -8); x.lineTo(-30, -22); x.lineTo(30, -22);
+  x.lineTo(42, -8); x.lineTo(50, 26); x.closePath(); x.fill();
+  x.shadowBlur = 0;
+  // cabin
+  x.fillStyle = "#0a0d18";
+  x.beginPath();
+  x.moveTo(-26, -20); x.lineTo(-20, -38); x.lineTo(20, -38); x.lineTo(26, -20);
+  x.closePath(); x.fill();
+  // wing
+  x.fillStyle = body;
+  x.fillRect(-46, -46, 92, 7);
+  x.fillRect(-38, -40, 6, 16); x.fillRect(32, -40, 6, 16);
+  // tail bar
+  x.shadowColor = "#ff2040"; x.shadowBlur = 22;
+  x.fillStyle = "#ff2040";
+  x.fillRect(-40, 2, 80, 9);
+  x.shadowBlur = 0;
+  // flames
+  x.shadowColor = "#66d9ff"; x.shadowBlur = 24;
+  x.fillStyle = "#bfefff";
+  x.beginPath(); x.ellipse(-22, 40, 7, 16, 0, 0, 7); x.fill();
+  x.beginPath(); x.ellipse(22, 40, 7, 16, 0, 0, 7); x.fill();
+  x.shadowBlur = 0;
+  x.restore();
+}
+function title(x, w, y) {
+  x.save();
+  x.textAlign = "center";
+  x.font = "italic 900 108px 'Segoe UI', Arial, sans-serif";
+  const g = x.createLinearGradient(0, y - 90, 0, y + 20);
+  g.addColorStop(0, "#ffffff"); g.addColorStop(0.45, "#00e5ff"); g.addColorStop(1, "#ff2d78");
+  x.shadowColor = "#00e5ff"; x.shadowBlur = 34;
+  x.fillStyle = g;
+  x.fillText("VELOCITY RUSH", w / 2, y);
+  x.shadowBlur = 0;
+  x.font = "700 30px 'Segoe UI', Arial, sans-serif";
+  x.fillStyle = "#ff2d78";
+  x.shadowColor = "#ff2d78"; x.shadowBlur = 16;
+  const t = "N E O N   G R A N D   P R I X";
+  x.fillText(t, w / 2, y + 46);
+  x.restore();
+}
+
+// ---- thumbnail
+const T = document.getElementById("thumb"), tx = T.getContext("2d");
+const W = 1280, H = 720, HOR = 320;
+let bg = tx.createLinearGradient(0, 0, 0, H);
+bg.addColorStop(0, "#05010f"); bg.addColorStop(0.42, "#1a0b3a"); bg.addColorStop(0.58, "#3a0f4a"); bg.addColorStop(1, "#0a0620");
+tx.fillStyle = bg; tx.fillRect(0, 0, W, H);
+stars(tx, W, H, 130);
+sun(tx, W / 2, HOR - 10, 190);
+tx.fillStyle = "rgba(5,6,13,0.6)"; tx.fillRect(0, HOR, W, H - HOR);
+grid(tx, W, H, HOR);
+road(tx, W, H, HOR);
+car(tx, W / 2 - 260, 560, 1.05, "#b44bff", "#b44bff");
+car(tx, W / 2 + 250, 545, 0.95, "#00e5ff", "#00e5ff");
+car(tx, W / 2 - 10, 600, 1.35, "#ff2d78", "#00e5ff");
+title(tx, W, 150);
+
+// ---- favicon
+const I = document.getElementById("icon"), ix = I.getContext("2d");
+let ig = ix.createLinearGradient(0, 0, 0, 512);
+ig.addColorStop(0, "#0a0322"); ig.addColorStop(1, "#1a0b3a");
+ix.fillStyle = ig; ix.fillRect(0, 0, 512, 512);
+stars(ix, 512, 512, 40);
+ix.strokeStyle = "rgba(180,75,255,0.4)"; ix.lineWidth = 3;
+for (let i = 0; i < 6; i++) {
+  const y = 300 + i * 40;
+  ix.beginPath(); ix.moveTo(0, y); ix.lineTo(512, y); ix.stroke();
+}
+car(ix, 256, 300, 3.1, "#ff2d78", "#00e5ff");
+
+// ---- save
+(async () => {
+  await fetch("/__save/thumbnail.png", { method: "POST", body: T.toDataURL("image/png") });
+  await fetch("/__save/favicon.png", { method: "POST", body: I.toDataURL("image/png") });
+  document.title = "saved";
+})();
+</script>
+</body></html>
