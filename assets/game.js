@@ -95,7 +95,11 @@ const BIND = {
   Space: "drift", ShiftLeft: "nitro", ShiftRight: "nitro", KeyN: "nitro", KeyR: "reset"
 };
 const held = new Set();
+function isTyping(t) {
+  return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+}
 addEventListener("keydown", e => {
+  if (isTyping(e.target)) return;   // never eat keystrokes meant for a text field
   const c = BIND[e.code];
   if (c) { held.add(c); e.preventDefault(); }
 });
@@ -1059,26 +1063,46 @@ function buildAttract(idx) {
   world._attract = true;
   attractIdx = idx;
   attractT = 0;
+  attractInit = false;   // re-snap camera to the new track
   // a couple of ghost cars cruising for life
   const g1 = addCarToWorld(90, { body: 1, accent: 1, rim: 0, spoiler: 2, glow: 0 }, "", false);
   const g2 = addCarToWorld(91, { body: 0, accent: 0, rim: 1, spoiler: 1, glow: 1 }, "", false);
   g1._ghost = 0; g2._ghost = 0.035;
 }
+const attractCam = new THREE.Vector3();
+const attractLook = new THREE.Vector3();
+let attractInit = false;
 function updateAttract(dt) {
   if (!world || !world._attract) return;
   attractT += dt * 0.008;
   const t = world.track;
   const N = t.N;
-  const at = f => t.samples[Math.floor(((f % 1) + 1) % 1 * N) % N];
+  // continuous sampler: lerp between adjacent track samples (no discrete snapping)
+  const at = f => {
+    const x = ((((f % 1) + 1) % 1)) * N;
+    const i0 = Math.floor(x) % N, i1 = (i0 + 1) % N, fr = x - Math.floor(x);
+    const a = t.samples[i0], b = t.samples[i1];
+    return { x: a.x + (b.x - a.x) * fr, y: a.y + (b.y - a.y) * fr, z: a.z + (b.z - a.z) * fr };
+  };
   const p = at(attractT);
-  const p2 = at(attractT + 0.012);
-  camera.position.set(p.x, p.y + 7, p.z);
-  camera.lookAt(p2.x, p2.y + 2.5, p2.z);
+  const p2 = at(attractT + 0.02);
+  const camTarget = { x: p.x, y: p.y + 7, z: p.z };
+  const lookTarget = { x: p2.x, y: p2.y + 2.5, z: p2.z };
+  if (!attractInit) {
+    attractCam.set(camTarget.x, camTarget.y, camTarget.z);
+    attractLook.set(lookTarget.x, lookTarget.y, lookTarget.z);
+    attractInit = true;
+  }
+  const k = Math.min(1, dt * 3.5);
+  attractCam.lerp(camTarget, k);
+  attractLook.lerp(lookTarget, k);
+  camera.position.copy(attractCam);
+  camera.lookAt(attractLook);
   camera.fov = 72; camera.updateProjectionMatrix();
   for (const [, e] of world.cars) {
     if (e._ghost === undefined) continue;
     const f = attractT * 3 + e._ghost;
-    const a = at(f), b = at(f + 0.004);
+    const a = at(f), b = at(f + 0.008);
     e.x = a.x; e.y = a.y; e.z = a.z;
     e.h = Math.atan2(-(b.x - a.x), -(b.z - a.z));
     e.sp = 30;
