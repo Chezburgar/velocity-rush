@@ -23,8 +23,8 @@ export const PEER_SERVER = null;
 // MODE A (metered.ca API key): the client fetches short-lived TURN
 // credentials at runtime. Put your app subdomain + API key here.
 export const METERED = {
-  subdomain: "",   // e.g. "yourapp"  ->  https://yourapp.metered.live
-  apiKey: ""       // your metered API key
+  subdomain: "ggvault",   // https://ggvault.metered.live
+  apiKey: "bb3aace54251a4a8e465952b1f202a43823c"
 };
 
 // MODE B (static credentials): paste a ready-made iceServers array. Use this
